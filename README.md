@@ -13,7 +13,7 @@ A full stack weather forecasting web application.
  - Render
  - Open-Meteo API
  - LeafLet
- - Open Street Map
+ - Open Street Map API
 
 # Functionality 
  - Let users enter a location (any of the following: Zip Code/Postal Code, Town, City, etc..) and get the current weather.
