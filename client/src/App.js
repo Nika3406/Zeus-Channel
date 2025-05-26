@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 import WeatherCard from './WeatherCard';
+import 'leaflet/dist/leaflet.css';
 
 function App() {
   const [location, setLocation] = useState('');

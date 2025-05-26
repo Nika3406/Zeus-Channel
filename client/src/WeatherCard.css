@@ -18,3 +18,12 @@
 .forecast strong {
   color: #007bff;
 }
+
+.map-section {
+  margin: 1.5rem 0;
+  height: 300px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
