@@ -19,11 +19,11 @@ urlparse.uses_netloc.append("postgres")
 DB_CONFIG = urlparse.urlparse(DATABASE_URL)
 
 DB_CONN_PARAMS = {
-    'dbname': DB_CONFIG.path[1:],
-    'user': DB_CONFIG.username,
-    'password': DB_CONFIG.password,
-    'host': DB_CONFIG.hostname,
-    'port': DB_CONFIG.port
+    'weather_app_7zm3': DB_CONFIG.path[1:],
+    'root': DB_CONFIG.username,
+    'vZ3NrUqI6IQBvKeIbgPbCHurBfmVa2n1': DB_CONFIG.password,
+    'dpg-d0qb416mcj7s73dsp8dg-a': DB_CONFIG.hostname,
+    '5432': DB_CONFIG.port
 }
 
 CSV_FILE = "weather_data.csv"
