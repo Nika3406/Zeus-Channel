@@ -13,20 +13,21 @@ CORS(app)
 
 import urllib.parse as urlparse
 
-# Use DATABASE_URL from Render (set this in Render's environment)
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    sys.exit("Error: DATABASE_URL environment variable is not set.")
+
 urlparse.uses_netloc.append("postgres")
 DB_CONFIG = urlparse.urlparse(DATABASE_URL)
 
 DB_CONN_PARAMS = {
-    "dbname": DB_CONFIG.dbname,
+    "dbname": DB_CONFIG.path[1:],  # remove leading slash from '/dbname'
     "user": DB_CONFIG.username,
     "password": DB_CONFIG.password,
     "host": DB_CONFIG.hostname,
     "port": DB_CONFIG.port
 }
-
-
 
 CSV_FILE = "weather_data.csv"
 
