@@ -4,6 +4,9 @@ import './App.css';
 import WeatherCard from './WeatherCard';
 import 'leaflet/dist/leaflet.css';
 
+// Backend URL
+const API_BASE = "https://zeus-backend.onrender.com";
+
 function App() {
   const [location, setLocation] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -15,7 +18,7 @@ function App() {
   // Fetch existing entries from the server
   const fetchEntries = async () => {
     try {
-      const res = await axios.get('/api/read');
+      const res = await axios.get(`${API_BASE}/api/read`);
       setEntries(res.data);
     } catch (err) {
       setError('Failed to fetch entries.');
@@ -37,7 +40,7 @@ function App() {
     }
 
     try {
-      await axios.post('/api/create', {
+      await axios.post(`${API_BASE}/api/create`, {
         location,
         start_date: startDate,
         end_date: endDate
@@ -58,7 +61,7 @@ function App() {
   // Delete an entry by ID
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`/api/delete/${id}`);
+      await axios.delete(`${API_BASE}/api/delete/${id}`);
       fetchEntries();
     } catch (err) {
       setError('Failed to delete entry.');
