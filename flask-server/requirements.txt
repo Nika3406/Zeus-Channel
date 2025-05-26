@@ -1,6 +1,5 @@
-Flask
-flask-cors
-psycopg2-binary
-requests
-pandas
-gunicorn
+Flask==2.3.2
+Flask-Cors==3.0.10
+psycopg2-binary==2.9.9
+requests==2.31.0
+pandas==2.2.2
