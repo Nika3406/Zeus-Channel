@@ -1,0 +1,20 @@
+.weather-card {
+  margin-top: 2rem;
+  text-align: left;
+}
+
+.weather-card h2 {
+  color: #333;
+}
+
+.forecast {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f4f4f4;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.forecast strong {
+  color: #007bff;
+}
