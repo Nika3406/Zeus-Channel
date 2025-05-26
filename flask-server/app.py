@@ -14,7 +14,7 @@ CORS(app)
 import urllib.parse as urlparse
 
 # Use DATABASE_URL from Render (set this in Render's environment)
-DATABASE_URL = os.getenv("postgresql://root:vZ3NrUqI6IQBvKeIbgPbCHurBfmVa2n1@dpg-d0qb416mcj7s73dsp8dg-a/weather_app_7zm3")
+DATABASE_URL = os.getenv("DATABASE_URL")
 urlparse.uses_netloc.append("postgres")
 DB_CONFIG = urlparse.urlparse(DATABASE_URL)
 
