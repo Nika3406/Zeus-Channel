@@ -1,8 +1,8 @@
-#Zeus Channel - Nicholas Shvelidze
+Zeus Channel - Nicholas Shvelidze
 
 A Weather Forecasting Web Application made with React
 
-##How to Run:
+How to Run:
 
 Step 1: Download the entire ZIP file and extract it to a folder of your choosing
 
