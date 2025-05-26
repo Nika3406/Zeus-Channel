@@ -11,21 +11,45 @@ import pandas as pd
 app = Flask(__name__)
 CORS(app)
 
-DB_CONFIG = {
-    'host': 'localhost',
-    'port': 5432,
-    'user': 'postgres',
-    'password': 'root',
-    'database': 'weather_app'
+import urllib.parse as urlparse
+
+# Use DATABASE_URL from Render (set this in Render's environment)
+DATABASE_URL = os.getenv("DATABASE_URL")
+urlparse.uses_netloc.append("postgres")
+DB_CONFIG = urlparse.urlparse(DATABASE_URL)
+
+DB_CONN_PARAMS = {
+    'dbname': DB_CONFIG.path[1:],
+    'user': DB_CONFIG.username,
+    'password': DB_CONFIG.password,
+    'host': DB_CONFIG.hostname,
+    'port': DB_CONFIG.port
 }
 
+CSV_FILE = "weather_data.csv"
 
 GEO_API = "https://geocoding-api.open-meteo.com/v1/search"
 WEATHER_API = "https://api.open-meteo.com/v1/forecast"
-CSV_FILE = "weather_data.csv"
 
 def get_db():
-    return psycopg2.connect(**DB_CONFIG)
+    return psycopg2.connect(**DB_CONN_PARAMS)
+
+def create_table_if_not_exists():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS weather_requests (
+            id SERIAL PRIMARY KEY,
+            location TEXT NOT NULL,
+            start_date DATE NOT NULL,
+            end_date DATE NOT NULL,
+            latitude FLOAT NOT NULL,
+            longitude FLOAT NOT NULL,
+            weather_data JSONB NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
 
 @app.route('/api/create', methods=['POST'])
 def create_weather_entry():
@@ -37,7 +61,6 @@ def create_weather_entry():
     if not location or not start_date or not end_date:
         return jsonify({"error": "Missing fields"}), 400
 
-    # Fetch coordinates
     geo_res = requests.get(GEO_API, params={"name": location, "count": 1}).json()
     if "results" not in geo_res:
         return jsonify({"error": "Invalid location"}), 404
@@ -45,7 +68,6 @@ def create_weather_entry():
     lat = geo_res["results"][0]["latitude"]
     lon = geo_res["results"][0]["longitude"]
 
-    # Fetch weather
     weather_res = requests.get(WEATHER_API, params={
         "latitude": lat,
         "longitude": lon,
@@ -61,77 +83,32 @@ def create_weather_entry():
         "current_weather": True
     }).json()
 
-    # Save to DB
     conn = get_db()
     cur = conn.cursor()
     try:
         cur.execute("""
             INSERT INTO weather_requests 
             (location, start_date, end_date, latitude, longitude, weather_data) 
-            VALUES (%s, %s, %s, %s, %s, %s)""",
-            (location, start_date, end_date, lat, lon, json.dumps(weather_res))
-        )
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
+        """, (location, start_date, end_date, lat, lon, json.dumps(weather_res)))
+        entry_id = cur.fetchone()[0]
         conn.commit()
-        entry_id = cur.lastrowid  # Get the inserted row's ID
     finally:
         conn.close()
 
-    # Write to CSV (reuse blanks by ID, or append)
     if not os.path.exists(CSV_FILE):
         with open(CSV_FILE, mode='w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(["ID", "Location", "Start Date", "End Date", "Latitude", "Longitude", "Max Temp"])
 
-    # Read current CSV
-    with open(CSV_FILE, mode='r') as file:
-        lines = list(csv.reader(file))
+    max_temp = weather_res["daily"]["temperature_2m_max"][0]
 
-    # Try to reuse blank line with matching ID
-    replaced = False
-    for idx, line in enumerate(lines):
-        if line[0] == str(entry_id):
-            lines[idx] = [
-                entry_id,
-                location,
-                start_date,
-                end_date,
-                lat,
-                lon,
-                weather_res["daily"]["temperature_2m_max"][0]
-            ]
-            replaced = True
-            break
-        elif all(field.strip() == '' for field in line):
-            lines[idx] = [
-                entry_id,
-                location,
-                start_date,
-                end_date,
-                lat,
-                lon,
-                weather_res["daily"]["temperature_2m_max"][0]
-            ]
-            replaced = True
-            break
+    with open(CSV_FILE, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([entry_id, location, start_date, end_date, lat, lon, max_temp])
 
-    if replaced:
-        with open(CSV_FILE, mode='w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerows(lines)
-    else:
-        with open(CSV_FILE, mode='a', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow([
-                entry_id,
-                location,
-                start_date,
-                end_date,
-                lat,
-                lon,
-                weather_res["daily"]["temperature_2m_max"][0]
-            ])
-
-    return jsonify({"message": "Entry created"}), 201
+    return jsonify({"message": "Entry created", "id": entry_id}), 201
 
 @app.route('/api/read', methods=['GET'])
 def read_weather_entries():
@@ -139,7 +116,7 @@ def read_weather_entries():
     cur = conn.cursor()
     try:
         cur.execute("SELECT * FROM weather_requests")
-        rows = [dict(zip([column[0] for column in cur.description], row)) for row in cur.fetchall()]
+        rows = [dict(zip([col.name for col in cur.description], row)) for row in cur.fetchall()]
     finally:
         conn.close()
     return jsonify(rows)
@@ -157,13 +134,11 @@ def delete_weather_entry(entry_id):
         conn.close()
 
     if os.path.exists(CSV_FILE):
-        # Read CSV with pandas
         df = pd.read_csv(CSV_FILE)
-
-        # Drop the row(s) where 'id' matches entry_id
         df = df[df['ID'] != entry_id]
-
-        # Save CSV back
         df.to_csv(CSV_FILE, index=False)
 
     return jsonify({"message": "Entry deleted"}), 200
+
+# Call this when app is first loaded
+create_table_if_not_exists()
